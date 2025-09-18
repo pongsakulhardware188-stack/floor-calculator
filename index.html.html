@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมคำนวณราคาแผ่นพื้น</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        #customPriceInput {
+            display: none;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #e9e9e9;
+            text-align: center;
+        }
+        #calculatedInfo {
+            font-size: 0.9em;
+            color: #555;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>โปรแกรมคำนวณราคาแผ่นพื้น</h2>
+
+    <div class="form-group">
+        <label for="boardType">1. ประเภทแผ่น</label>
+        <select id="boardType">
+            <option value="normal">ธรรมดา</option>
+            <option value="m.o.c">มอก.</option>
+            <option value="custom">กำหนดเอง</option>
+        </select>
+    </div>
+
+    <div class="form-group" id="customPriceInput">
+        <label for="customPrice">ราคาตั้ง (บาท/ตร.ม.)</label>
+        <input type="number" id="customPrice" value="0">
+    </div>
+
+    <div class="form-group">
+        <label for="wireCount">2. จำนวนลวด</label>
+        <select id="wireCount">
+            <option value="4">4 เส้น</option>
+            <option value="5">5 เส้น</option>
+            <option value="6">6 เส้น</option>
+            <option value="7">7 เส้น</option>
+            <option value="8">8 เส้น</option>
+            <option value="5_mm_5">5 มม. 5 เส้น</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="length">3. ขนาด (ความยาว) เมตร</label>
+        <input type="number" id="length" value="0" min="0" step="0.1">
+    </div>
+
+    <div id="result">
+        กรอกข้อมูลเพื่อคำนวณ
+    </div>
+</div>
+
+<script>
+    const boardType = document.getElementById('boardType');
+    const customPriceInput = document.getElementById('customPriceInput');
+    const customPrice = document.getElementById('customPrice');
+    const length = document.getElementById('length');
+    const wireCount = document.getElementById('wireCount');
+    const resultDiv = document.getElementById('result');
+
+    function updateWireCountByLength() {
+        const lengthValue = parseFloat(length.value);
+        if (isNaN(lengthValue) || lengthValue <= 0) {
+            return;
+        }
+
+        if (lengthValue <= 3.0) {
+            wireCount.value = '4';
+        } else if (lengthValue > 3.0 && lengthValue <= 4.0) {
+            wireCount.value = '5';
+        } else if (lengthValue > 4.0 && lengthValue <= 5.0) {
+            wireCount.value = '7';
+        } else { // lengthValue > 5.0
+            wireCount.value = '8';
+        }
+    }
+
+    function calculatePrice() {
+        let step = 0;
+        const boardTypeValue = boardType.value;
+        const lengthValue = parseFloat(length.value);
+        const selectedWireCount = wireCount.value;
+
+        if (isNaN(lengthValue) || lengthValue <= 0) {
+            resultDiv.innerHTML = 'กรุณากรอกความยาวที่ถูกต้อง';
+            return;
+        }
+
+        if (boardTypeValue === 'normal' || boardTypeValue === 'custom') {
+            let basePrice = (boardTypeValue === 'custom') ? parseFloat(customPrice.value) || 0 : 195;
+            if (basePrice === 0 && boardTypeValue === 'custom') {
+                resultDiv.innerHTML = 'กรุณากำหนดราคาตั้ง';
+                return;
+            }
+
+            if (selectedWireCount === '4') {
+                step = basePrice;
+            } else if (selectedWireCount === '5') {
+                step = basePrice + 10;
+            } else if (selectedWireCount === '6') {
+                step = basePrice + 20;
+            } else if (selectedWireCount === '7') {
+                step = basePrice + 35;
+            } else if (selectedWireCount === '8') {
+                step = basePrice + 55;
+            } else if (selectedWireCount === '5_mm_5') {
+                step = 250;
+            }
+        } else if (boardTypeValue === 'm.o.c') {
+            if (selectedWireCount === '4') {
+                step = 230;
+            } else if (selectedWireCount === '5') {
+                step = 230 + 15;
+            } else if (selectedWireCount === '6') {
+                step = 230 + 30; // 230 + (15*2)
+            } else if (selectedWireCount === '7') {
+                step = 280;
+            } else if (selectedWireCount === '8') {
+                step = 305;
+            } else if (selectedWireCount === '5_mm_5') {
+                step = 305;
+            }
+        }
+
+        const finalPrice = 0.35 * step * lengthValue;
+
+        if (!isNaN(finalPrice)) {
+            resultDiv.innerHTML = `
+                <h4>ราคาคำนวณ: ${finalPrice.toFixed(2)} บาท</h4>
+                <div id="calculatedInfo">
+                    Step: ${step.toFixed(2)} บาท <br>
+                    จำนวนลวดที่ใช้: ${wireCount.options[wireCount.selectedIndex].text} <br>
+                    ความยาว: ${lengthValue.toFixed(2)} เมตร
+                </div>
+            `;
+        } else {
+            resultDiv.innerHTML = 'กรุณาใส่ข้อมูลให้ครบถ้วน';
+        }
+    }
+
+    boardType.addEventListener('change', () => {
+        customPriceInput.style.display = boardType.value === 'custom' ? 'block' : 'none';
+        calculatePrice();
+    });
+    customPrice.addEventListener('input', calculatePrice);
+    
+    length.addEventListener('input', () => {
+        updateWireCountByLength();
+        calculatePrice();
+    });
+    
+    wireCount.addEventListener('change', calculatePrice);
+
+    calculatePrice();
+</script>
+
+</body>
+</html>
